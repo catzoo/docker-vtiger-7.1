@@ -103,8 +103,8 @@ RUN wget https://www.php.net/distributions/php-5.4.45.tar.gz; \
 	make; \
 	make install
 
-COPY vtiger.tar /root/temp
-RUN tar -xf vtiger.tar -C /usr/local/apache2/htdocs;
+RUN wget https://sourceforge.net/projects/vtigercrm/files/vtiger%20CRM%207.1.0/Core%20Product/vtigercrm7.1.0.tar.gz/download; \
+    tar -xf download -C /usr/local/apache2/htdocs;
 
 WORKDIR /usr/local/apache2
 
