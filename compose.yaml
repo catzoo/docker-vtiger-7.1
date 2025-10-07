@@ -1,0 +1,15 @@
+services:
+  vtiger:
+    image: vtiger:testing
+    container_name: vtiger
+    ports:
+      - "80:80"
+  
+  maria:
+    build: maria
+    container_name: mariadb
+    environment:
+      - MARIADB_RANDOM_ROOT_PASSWORD=1
+      - MARIADB_USER=vpanda
+      - MARIADB_PASSWORD=test
+      - MARIADB_DATABASE=vtiger

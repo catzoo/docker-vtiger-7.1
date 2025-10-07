@@ -1,0 +1,132 @@
+FROM debian:bookworm-slim
+
+RUN apt update; apt -y install build-essential libxml2-dev libjpeg-dev libpng-dev libfreetype6-dev libmcrypt-dev libxslt1-dev libkrb5-dev libltdl-dev default-libmysqlclient-dev libpcre3-dev libapr1-dev libaprutil1-dev wget git
+
+RUN mkdir /root/temp
+WORKDIR /root/temp
+
+# Building Apache apr
+RUN wget https://dlcdn.apache.org//apr/apr-1.7.6.tar.gz; \
+	tar -xzf apr-1.7.6.tar.gz; \
+	cd apr-1.7.6; \
+	./configure; \
+	make; \
+	make install
+	
+# Building Apache apr-utl
+RUN wget https://dlcdn.apache.org//apr/apr-util-1.6.3.tar.gz; \
+	tar -xzf apr-util-1.6.3.tar.gz; \
+	cd apr-util-1.6.3; \
+	./configure \
+		--with-apr=/usr/local/apr; \
+	make; \
+	make install
+
+# Building Apache httpd
+RUN wget https://dlcdn.apache.org/httpd/httpd-2.4.65.tar.gz; \
+	tar -xzf httpd-2.4.65.tar.gz; \
+	cd httpd-2.4.65; \
+	./configure \
+		--enable-so; \
+	make; \
+	make install
+
+# Building openssl 1.0.2u
+RUN wget https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz; \
+	tar -xzf openssl-1.0.2u.tar.gz; \
+	cd openssl-1.0.2u; \
+	./config shared --openssldir=/opt/openssl-1.0.2/ enable-ec_nistp_64_gcc_128; \
+	make depend; \
+	make; \
+	make install; \
+	ln -s /opt/openssl-1.0.2/lib /opt/openssl-1.0.2/lib/x86_64-linux-gnu; \
+	echo /opt/openssl-1.0.2/lib >> /etc/ld.so.conf.d/openssl.conf; \
+	ldconfig;
+
+# Compile c-client library for php-imap
+RUN cd /opt; \
+	git clone https://github.com/uw-imap/imap.git; \
+	mv imap imap-2007f; cd imap-2007f; \
+	sed -i '/^SSLDIR=/ s/SSLDIR=.*/SSLDIR=\/opt\/openssl-1.0.2/' /opt/imap-2007f/src/osdep/unix/Makefile; \
+	sed -i '/^EXTRACFLAGS=/ s/EXTRACFLAGS=/EXTRACFLAGS=-fPIC/' /opt/imap-2007f/Makefile; \
+	make slx IP6=4;
+	
+# Compile Curl bundled with OpenSSL 1.0.2u
+RUN wget https://curl.se/download/curl-7.88.1.tar.gz; \
+	tar -xzf curl-7.88.1.tar.gz; \
+	cd curl-7.88.1; \
+	./configure \ 
+		--prefix=/opt/curl \
+		--with-ssl=/opt/openssl-1.0.2 \
+		--with-ca-path=/etc/ssl/certs; \
+	make; \
+	make install
+
+# Build PHP 5.4.45
+RUN wget https://www.php.net/distributions/php-5.4.45.tar.gz; \
+	tar xzf php-5.4.45.tar.gz; \
+	cd php-5.4.45; \
+	./configure \
+		--prefix=/opt/php5 \
+		--with-config-file-path=/opt/php5/etc \
+		--enable-fpm \
+		--with-fpm-user=www-data \
+		--with-fpm-group=www-data \
+		--enable-bcmath \
+		--enable-ftp \
+		--enable-gd-native-ttf \
+		--enable-libxml \
+		--enable-mbstring \
+		--enable-soap --enable-sockets \
+		--enable-zip \
+		--with-curl=/opt/curl \
+		--with-gd \
+		--with-gettext \
+		--with-mcrypt \
+		--enable-mysqlnd \
+		--with-mysql=mysqlnd \
+		--with-pdo-mysql=mysqlnd \
+		--with-mysqli=mysqlnd \
+		--with-mysql-sock=/var/run/mysqld/mysqld.sock \
+		--with-openssl=/opt/openssl-1.0.2 \
+		--with-openssl-dir=/opt/openssl-1.0.2 \
+		--with-zlib \
+		--with-xsl \
+		--with-zlib-dir=/usr \
+		--enable-calendar \
+		--enable-gd-native-ttf \
+		--with-jpeg-dir=/usr \
+		--with-png-dir=/usr \
+		--with-imap=/opt/imap-2007f \
+		--with-imap-ssl \
+		--with-apxs2=/usr/local/apache2/bin/apxs; \
+	make; \
+	make install
+
+COPY vtiger.tar /root/temp
+RUN tar -xf vtiger.tar -C /usr/local/apache2/htdocs;
+
+WORKDIR /usr/local/apache2
+
+# Configuring / Cleaning up
+RUN rm htdocs/index.html; \
+    chmod -R 777 htdocs/vtigercrm; \
+    cd conf; \
+    echo "<FilesMatch \.php$>" >> httpd.conf; \
+    echo "SetHandler application/x-httpd-php" >> httpd.conf; \
+    echo "</FilesMatch>" >> httpd.conf; \
+    echo ""; >> httpd.conf; \
+    echo "<Directory /usr/local/apache2/htdocs/vtigercrm>" >> httpd.conf; \
+    echo "DirectoryIndex index.php" >> httpd.conf; \
+    echo "</Directory>" >> httpd.conf; \
+    cp /root/temp/php-5.4.45/php.ini-production /opt/php5/etc/php.ini; \
+    rm -rd /root/temp; \
+    apt remove -y git wget; \
+    apt autoremove -y;
+
+COPY httpd-foreground /usr/local/bin/
+RUN chmod +x /usr/local/bin/httpd-foreground
+
+EXPOSE 80
+
+ENTRYPOINT ["httpd-foreground"]

@@ -1,0 +1,3 @@
+FROM mariadb:latest
+
+COPY sql_mode.cnf /etc/mysql/conf.d/
