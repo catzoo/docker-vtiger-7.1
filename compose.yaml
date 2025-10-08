@@ -1,6 +1,6 @@
 services:
   vtiger:
-    image: vtiger:testing
+    image: ghcr.io/catzoo/vtiger
     container_name: vtiger
     ports:
       - "80:80"
