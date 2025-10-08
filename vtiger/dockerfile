@@ -103,26 +103,28 @@ RUN wget https://www.php.net/distributions/php-5.4.45.tar.gz; \
 	make; \
 	make install
 
+# Grabbing vtiger CRM 7.1
 RUN wget https://sourceforge.net/projects/vtigercrm/files/vtiger%20CRM%207.1.0/Core%20Product/vtigercrm7.1.0.tar.gz/download; \
-    tar -xf download -C /usr/local/apache2/htdocs;
+	tar -xzf download; \
+	rm /usr/local/apache2/htdocs/index.html; \
+	mv vtigercrm/* /usr/local/apache2/htdocs;
 
 WORKDIR /usr/local/apache2
 
 # Configuring / Cleaning up
-RUN rm htdocs/index.html; \
-    chmod -R 777 htdocs/vtigercrm; \
-    cd conf; \
-    echo "<FilesMatch \.php$>" >> httpd.conf; \
-    echo "SetHandler application/x-httpd-php" >> httpd.conf; \
-    echo "</FilesMatch>" >> httpd.conf; \
-    echo ""; >> httpd.conf; \
-    echo "<Directory /usr/local/apache2/htdocs/vtigercrm>" >> httpd.conf; \
-    echo "DirectoryIndex index.php" >> httpd.conf; \
-    echo "</Directory>" >> httpd.conf; \
-    cp /root/temp/php-5.4.45/php.ini-production /opt/php5/etc/php.ini; \
-    rm -rd /root/temp; \
-    apt remove -y git wget; \
-    apt autoremove -y;
+RUN chmod -R 777 htdocs; \
+	cd conf; \
+	echo "<FilesMatch \.php$>" >> httpd.conf; \
+	echo "SetHandler application/x-httpd-php" >> httpd.conf; \
+	echo "</FilesMatch>" >> httpd.conf; \
+	echo ""; >> httpd.conf; \
+	echo "<Directory /usr/local/apache2/htdocs>" >> httpd.conf; \
+	echo "DirectoryIndex index.php" >> httpd.conf; \
+	echo "</Directory>" >> httpd.conf; \
+	cp /root/temp/php-5.4.45/php.ini-production /opt/php5/etc/php.ini; \
+	rm -rd /root/temp; \
+	apt remove -y git wget build-essential; \
+	apt autoremove -y;
 
 COPY httpd-foreground /usr/local/bin/
 RUN chmod +x /usr/local/bin/httpd-foreground
