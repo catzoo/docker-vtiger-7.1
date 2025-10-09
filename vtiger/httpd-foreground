@@ -1,5 +1,23 @@
-#!/bin/sh
-set -e
+#!/bin/bash
+
+declare -A variables;
+
+variables["MARIADB_SERVER"]="_DBC_SERVER_";
+variables["MARIADB_PORT"]="_DBC_PORT_";
+variables["MARIADB_USER"]="_DBC_USER_";
+variables["MARIADB_PASSWORD"]="_DBC_PASS_";
+variables["MARIADB_DATABASE"]="_DBC_NAME_";
+variables["ADMIN_PASS"]="_ADMIN_PASS_";
+variables["ADMIN_EMAIL"]="_ADMIN_EMAIL_";
+
+CONFIG_FILE="/usr/local/apache2/htdocs/config.db.php"
+
+# Changing vtiger's CONFIG_FILE to use the enviroment variables
+for key in ${!variables[@]}; do
+    if [[ ! -z "${!key}" ]]; then
+        sed -i "s/${variables[${key}]}/${!key}/" ${CONFIG_FILE} 
+    fi
+done
 
 # Apache gets grumpy about PID files pre-existing
 rm -f /usr/local/apache2/logs/httpd.pid

@@ -1,15 +1,29 @@
+version: '3.4'
+
+x-env: &env
+  MARIADB_USER: vpanda
+  MARIADB_PASSWORD: test
+  MARIADB_DATABASE: vtiger
+
 services:
   vtiger:
     image: ghcr.io/catzoo/vtiger
     container_name: vtiger
+
     ports:
       - "80:80"
+  
+    environment:
+      <<: *env
+      ADMIN_PASS: test
+      ADMIN_EMAIL: test@example.com
+      MARIADB_SERVER: maria
+      MARIADB_PORT: 3306
   
   maria:
     build: maria
     container_name: mariadb
+
     environment:
-      - MARIADB_RANDOM_ROOT_PASSWORD=1
-      - MARIADB_USER=vpanda
-      - MARIADB_PASSWORD=test
-      - MARIADB_DATABASE=vtiger
+      <<: *env
+      MARIADB_RANDOM_ROOT_PASSWORD: 1
