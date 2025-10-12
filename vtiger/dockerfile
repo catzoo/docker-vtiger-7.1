@@ -108,7 +108,7 @@ RUN wget https://sourceforge.net/projects/vtigercrm/files/vtiger%20CRM%207.1.0/C
 	tar -xzf download; \
 	rm /usr/local/apache2/htdocs/index.html; \
 	mv vtigercrm/* /usr/local/apache2/htdocs; \
-	chmod -R 777 htdocs;
+	chmod -R 777 /usr/local/apache2/htdocs;
 
 WORKDIR /usr/local/apache2
 
