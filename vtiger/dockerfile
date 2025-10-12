@@ -101,33 +101,27 @@ RUN wget https://www.php.net/distributions/php-5.4.45.tar.gz; \
 		--with-imap-ssl \
 		--with-apxs2=/usr/local/apache2/bin/apxs; \
 	make; \
-	make install
+	make install;
 
 # Grabbing vtiger CRM 7.1
 RUN wget https://sourceforge.net/projects/vtigercrm/files/vtiger%20CRM%207.1.0/Core%20Product/vtigercrm7.1.0.tar.gz/download; \
 	tar -xzf download; \
 	rm /usr/local/apache2/htdocs/index.html; \
-	mv vtigercrm/* /usr/local/apache2/htdocs;
+	mv vtigercrm/* /usr/local/apache2/htdocs; \
+	chmod -R 777 htdocs;
 
 WORKDIR /usr/local/apache2
 
 # Configuring / Cleaning up
-RUN chmod -R 777 htdocs; \
-	cd conf; \
-	echo "<FilesMatch \.php$>" >> httpd.conf; \
-	echo "SetHandler application/x-httpd-php" >> httpd.conf; \
-	echo "</FilesMatch>" >> httpd.conf; \
-	echo ""; >> httpd.conf; \
-	echo "<Directory /usr/local/apache2/htdocs>" >> httpd.conf; \
-	echo "DirectoryIndex index.php" >> httpd.conf; \
-	echo "</Directory>" >> httpd.conf; \
-	cp /root/temp/php-5.4.45/php.ini-production /opt/php5/etc/php.ini; \
-	rm -rd /root/temp; \
+RUN rm -rd /root/temp; \
 	apt remove -y git wget build-essential; \
 	apt autoremove -y;
 
-COPY httpd-foreground /usr/local/bin/
-RUN chmod +x /usr/local/bin/httpd-foreground
+COPY --chmod=+x httpd-foreground /usr/local/bin/
+COPY httpd.conf /usr/local/apache2/conf/
+COPY php.ini /opt/php5/etc/
+
+VOLUME /usr/local/apache2/htdocs
 
 EXPOSE 80
 
